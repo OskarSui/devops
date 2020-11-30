@@ -18,22 +18,20 @@ class Post(models.Model):
     def get_absolute_url(self):
         return reverse('post-detail', kwargs={'pk': self.pk})
 
-# class Comment(models.Model):
-#     author = models.ForeignKey(User, on_delete=models.CASCADE)
-#     date_posted = models.DateTimeField(default=timezone.now)
-#     content = models.TextField()
-#     post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE)
-#     status = models.BooleanField(default=True)
-#
-#     def str(self):
-#         return self.user.username
+class Comment(models.Model):
+    post = models.ForeignKey(Post, related_name='comments', on_delete=models.CASCADE)
+    name = models.CharField(max_length=80, null=True)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    email = models.EmailField()
+    content = models.TextField()
+    date_posted = models.DateTimeField(default=timezone.now)
+    updated = models.DateTimeField(default=timezone.now)
+    active = models.BooleanField(default=True)
 
-# class Tag(models.Model):
-#     title = models.CharField(max_length=50)
-#     slug = models.SlugField(max_length=50, unique=True)
-#
-#     def __str__(self):
-#         return '{}'.format(self.title)
+    def __str__(self):
+        return 'Comment by {} on {}'.format(self.name, self.post)
+
+
 
 
 

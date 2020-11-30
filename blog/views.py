@@ -1,9 +1,10 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
-from .models import Post
+from .models import Post, Comment
+from .forms import CommentForm
 from django.db.models import Q
 
 def home(request):
@@ -38,21 +39,22 @@ class UserPostListView(ListView):
 
 class PostDetailView(DetailView):
     model = Post
-#
-#     def post_single(request, pk):
-#         post = get_object_or_404(Post, pk=pk)
-#         comment = Comment.objects.filter(post=post)
-#         if request.method == "POST":
-#             form = CommentForm(request.POST)
-#             if form.is_valid():
-#                 comm = form.save(commit=False)
-#                 comm.user = request.user
-#                 comm.post = post
-#                 comm.save()
-#         else:
-#             form = CommentForm()
-#         return render(request, 'blog/post_detail.html', {"post":post, "form":form, "comment":comment})
-#
+
+    def get(self, request, *args, **kwargs):
+        post = self.get_object()
+        comments = Comment.objects.filter(post=post).order_by('-pk')
+        # comments = post.comments.filter(active=True)
+        # new_comment = None
+        # if request.method == "POST":
+        #     comment_form = CommentForm(request.POST)
+        #     if comment_form.is_valid():
+        #         new_comment = comment_form.save(commit=False)
+        #         # comm.user = request.user
+        #         new_comment.post = post
+        #         new_comment.save()
+        # else:
+        #     comment_form = CommentForm()
+        return render(request, 'blog/post_detail.html', {'post':post, 'comments':comments })
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -87,6 +89,78 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
             return True
         return False
 
+def add_comment_to_post(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    if request.method == "POST":
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.save()
+            return redirect('post-detail', pk=post.pk)
+    else:
+        form = CommentForm()
+    return render(request, 'blog/add_comment_to_post.html', {'form': form})
+
+    # @login_required
+    # def comment_approve(request, pk):
+    #     comment = get_object_or_404(Comment, pk=pk)
+    #     comment.approve()
+    #     return redirect('post_detail', pk=comment.post.pk)
+    #
+    # @login_required
+    # def comment_remove(request, pk):
+    #     comment = get_object_or_404(Comment, pk=pk)
+    #     comment.delete()
+    #     return redirect('post_detail', pk=comment.post.pk)
+
+# class CreateCommentView(CreateView):
+#     model = Post
+#     fields = ['name', 'content']
+
+    # def post_detail(request, pk):
+        # post = get_object_or_404(Post, pk=pk)
+        # comments = Comment.objects.filter(post=post).order_by('-pk')
+        # comments = post.comments.filter(active=True)
+        # new_comment = None
+        # if request.method == "POST":
+        #     cf = CommentForm(request.POST or None)
+        #     if cf.is_valid():
+        #         if cf.is_valid():
+        #             content = request.POST.get('content')
+        #             comment = Comment.objects.create(post=post, user=request.user, content=content)
+        #             comment.save()
+        #             return redirect(post.get_absolute_url())
+        #         else:
+        #             cf = CommentForm()
+        #
+        #         context = {
+        #             'comment_form': cf,
+        #         }
+        #         return render(request, 'blog / post_detail.html', context)
+                # content = request.POST.get('content')
+                # comment = Comment.objects.create(post=post, user=request.user, content=request.content)
+                # comment.save()
+                # return HttpResponseRedirect(post.get_absolute_url())
+                # new_comment = comment_form.save(commit=False)
+                # comm.user = request.user
+                # new_comment.post = post
+        #
+        # else:
+        #     comment_form = CommentForm()
+        #
+        # context = {
+        #     'post': post,
+        #     'comments': comments,
+        #     'content_form': comment_form,
+        # }
+        # return render(request, 'blog/comment.html', context)
+
+
+
+def about(request):
+    return render(request, 'blog/about.html', {'title': 'About'})
+
 # class TagDetail(ObjectDetailMixin, View):
 
 
@@ -111,5 +185,4 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 #             return render(request, 'blog/share.html',
 #                           {'post': post, 'form': form, 'sent': sent})
 
-def about(request):
-    return render(request, 'blog/about.html', {'title': 'About'})
+
